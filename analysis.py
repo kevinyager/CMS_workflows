@@ -1,12 +1,12 @@
+import numpy as np
 import prefect
 from prefect import task, Flow, Parameter
-
+import sys
 from tiled.client import from_profile
 
 tiled_client = from_profile("nsls2", username=None)["cms"]
 tiled_client_raw = tiled_client["raw"]
-# This needs the sandbox in place first
-# tiled_client_processed = tiled_client["sandbox"]
+tiled_client_processed = tiled_client["sandbox"]
 
 
 @task
@@ -20,6 +20,19 @@ def analysis(ref):
     logger.info(f"Full uid = {full_uid}")
     # Do any data processing/calling other functions for data
     # processing here
+    primary_data = run["primary"]["data"].read()
+
+    # Grab some data to test writing to tiled sandbox
+    data = primary_data["pilatus2M_image"][0, 0, :5, :5]
+    # Include the raw uid from the original scan the processed
+    # data comes from to search for later
+    md = {"python_environment": sys.prefix,
+          "raw_uid": full_uid}
+    # Now write the data
+    tiled_client_processed.write_array(
+            np.array(data),
+            metadata=md
+    )
     logger.info("Analysis complete")
 
 with Flow("analysis") as flow:
