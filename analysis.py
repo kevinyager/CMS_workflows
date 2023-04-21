@@ -1,7 +1,8 @@
-import numpy as np
-import prefect
-from prefect import task, Flow, Parameter
+# Prefect 2 version of anaysis code template flow
 import sys
+
+import numpy as np
+from prefect import flow, get_run_logger, task
 from tiled.client import from_profile
 
 tiled_client = from_profile("nsls2", username=None)["cms"]
@@ -11,7 +12,7 @@ tiled_client_processed = tiled_client["sandbox"]
 
 @task
 def analysis(ref):
-    logger = prefect.context.get("logger")
+    logger = get_run_logger()
     logger.info("Analysis starting...")
     run = tiled_client_raw[ref]
     # Get the full uid for ease of finding analyzed results
@@ -26,15 +27,12 @@ def analysis(ref):
     data = primary_data["pilatus2M_image"][0, 0, :5, :5]
     # Include the raw uid from the original scan the processed
     # data comes from to search for later
-    md = {"python_environment": sys.prefix,
-          "raw_uid": full_uid}
+    md = {"python_environment": sys.prefix, "raw_uid": full_uid}
     # Now write the data
-    tiled_client_processed.write_array(
-            np.array(data),
-            metadata=md
-    )
+    tiled_client_processed.write_array(np.array(data), metadata=md)
     logger.info("Analysis complete")
 
-with Flow("analysis") as flow:
-    raw_ref = Parameter("ref")
+
+@flow
+def analysis_flow(raw_ref):
     analysis(raw_ref)
