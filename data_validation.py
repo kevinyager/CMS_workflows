@@ -1,10 +1,9 @@
 # TODO: Figure out how to import this better
 # Normally comes from /nsls2/data/dssi/shared/workflows/data_validation2.py
 
-# Prefect 2 verison of data validation
-from datetime import timedelta
-from prefect import flow, task, get_run_logger
 import time as ttime
+
+from prefect import flow, get_run_logger, task
 from tiled.client import from_profile
 
 
