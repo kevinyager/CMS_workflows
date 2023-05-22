@@ -122,8 +122,10 @@ def reduce_run(bluesky_run, process, protocols, output_dir):
 
 
 def publish_reduced_documents(reduced, metadata, reduced_publisher):
+    logger = get_run_logger()
     cr = compose_run(metadata=metadata)
     reduced_publisher("start", cr.start_doc)
+    logger.info(f"{reduced = }")
 
     desc_bundle = cr.compose_descriptor(
         name="primary",
