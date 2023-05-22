@@ -193,8 +193,7 @@ def analysis(ref):
     # Analysis to perform
     ########################################
     # source_dir = f'{analysis_dir}/raw/'
-    # output_dir = analysis_dir
-    output_dir = "/nsls2/data/dssi/scratch/prefect-outputs/cms/"
+    output_dir = analysis_dir
     # output_dir = "/nsls2/data/dssi/scratch/prefect-outputs/cms/"
 
 
