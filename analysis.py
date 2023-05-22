@@ -139,16 +139,21 @@ def infer_data_keys(doc: dict) -> DataKeys:
         "integer": (int, np.integer),
     }
     for key, val in doc.items():
-        if isinstance(val, Iterable) and not isinstance(val, _bad_iterables):
+        if val is None:
+            _val = "None"
+            dtype = "string"
+        elif isinstance(val, Iterable) and not isinstance(val, _bad_iterables):
+            _val = val
             dtype = "array"
         else:
+            _val = val
             for json_type, py_types in _type_map.items():
                 if isinstance(val, py_types):
                     dtype = json_type
                     break
             else:
                 raise TypeError()
-        arr_val = np.asanyarray(val)
+        arr_val = np.asanyarray(_val)
         arr_dtype = arr_val.dtype
         data_keys[key] = dict(
             dtype=dtype,
