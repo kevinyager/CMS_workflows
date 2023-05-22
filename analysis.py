@@ -121,6 +121,37 @@ def reduce_run(bluesky_run, process, protocols, output_dir):
     return reduced, {"raw_start": bluesky_run.metadata["start"]}
 
 
+def infer_data_keys(doc: dict) -> DataKeys:
+    data_keys = dict()
+    _bad_iterables = (str, bytes, dict)
+    _type_map = {
+        "number": (float, np.floating, complex),
+        "array": (np.ndarray, list, tuple),
+        "string": (str,),
+        "integer": (int, np.integer),
+    }
+    for key, val in doc.items():
+        if isinstance(val, Iterable) and not isinstance(val, _bad_iterables):
+            dtype = "array"
+        else:
+            for json_type, py_types in _type_map.items():
+                if isinstance(val, py_types):
+                    dtype = json_type
+                    break
+            else:
+                raise TypeError()
+        arr_val = np.asanyarray(val)
+        arr_dtype = arr_val.dtype
+        data_keys[key] = dict(
+            dtype=dtype,
+            dtype_str=arr_dtype.str,
+            dtype_descr=arr_dtype.descr,
+            shape=list(arr_val.shape),
+            source="computed",
+        )
+    return data_keys
+
+
 def publish_reduced_documents(reduced, metadata, reduced_publisher):
     logger = get_run_logger()
     cr = compose_run(metadata=metadata)
@@ -129,14 +160,15 @@ def publish_reduced_documents(reduced, metadata, reduced_publisher):
 
     desc_bundle = cr.compose_descriptor(
         name="primary",
-        data_keys={
-            k: {
-                "dtype": data_type(v),
-                "shape": data_shape(v),
-                "source": "computed",
-            }
-            for k, v in reduced.items()
-        },
+        data_keys=infer_data_keys(reduced),
+        # data_keys={
+        #     k: {
+        #         "dtype": data_type(v),
+        #         "shape": data_shape(v),
+        #         "source": "computed",
+        #     }
+        #     for k, v in reduced.items()
+        # },
     )
 
     reduced_publisher("descriptor", desc_bundle.descriptor_doc)
