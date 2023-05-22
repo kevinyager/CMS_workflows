@@ -12,6 +12,7 @@ from tiled.client import from_profile
 
 from ophyd.utils.epics_pvs import data_shape, data_type
 from event_model import compose_run
+from typing import Iterable, TypedDict
 
 
 tiled_client = from_profile("nsls2", username=None)["cms"]
@@ -119,6 +120,13 @@ def reduce_run(bluesky_run, process, protocols, output_dir):
     ########################################
 
     return reduced, {"raw_start": bluesky_run.metadata["start"]}
+
+
+class DataKeys(TypedDict):
+    dtype: str
+    dtype_str: str
+    dtype_descr: list
+    shape: list
 
 
 def infer_data_keys(doc: dict) -> DataKeys:
