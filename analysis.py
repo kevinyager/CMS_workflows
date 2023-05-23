@@ -218,11 +218,20 @@ def publish_reduced_documents(reduced, metadata, reduced_publisher):
 def output_reduced_document(name, doc):
     cms_sandbox_tiled_client.v1.insert(name, doc)
     reduced_producer(name, doc)
-    
+
 
 @task
 def analysis(ref):
     logger = get_run_logger()
+    run = tiled_client_raw[ref]
+    full_uid = run.start["uid"]
+    # print(f"{full_uid = }")
+    # logger.info(f"{full_uid = }")
+    if not run.start["PTA"]:
+        logger.info(f"{run.start['PTA'] = }")
+        logger.info(f"Not running analysis on {full_uid}")
+        return
+
     SciAnalysis_PATH='/nsls2/data/cms/legacy/xf11bm/software/SciAnalysis/'
     # SciAnalysis_PATH in sys.path or sys.path.append(SciAnalysis_PATH)
 
@@ -306,17 +315,8 @@ def analysis(ref):
 
         # End SciAnalysis setup
         ########################################
-
-    run = tiled_client_raw[ref]
-    full_uid = run.start["uid"]
-    # print(f"{full_uid = }")
-    # logger.info(f"{full_uid = }")
     logger.info(f"reducing run {full_uid}")
     reduced, metadata = reduce_run(run, process, protocols, output_dir)
-    # print(f"{reduced = }")
-    # logger.info(f"{reduced = }")
-    # print(f"{metadata = }")
-    # logger.info(f"{metadata = }")
     logger.info(f"publishing run {full_uid}")
     publish_reduced_documents(reduced, metadata, output_reduced_document)
     logger.info("Done")
