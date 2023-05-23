@@ -6,6 +6,9 @@ import sys
 import time as ttime
 import uuid
 
+from bluesky_kafka import Publisher, RemoteDispatcher
+import nslsii.kafka_utils
+
 import numpy as np
 from prefect import flow, get_run_logger, task
 from tiled.client import from_profile
@@ -19,6 +22,15 @@ tiled_client = from_profile("nsls2", username=None)["cms"]
 tiled_client_raw = tiled_client["raw"]
 # tiled_client_processed = tiled_client["sandbox"]
 cms_sandbox_tiled_client = tiled_client["bluesky_sandbox"]
+
+
+kafka_config = nslsii.kafka_utils._read_bluesky_kafka_config_file(config_file_path="/etc/bluesky/kafka.yml")
+reduced_producer = Publisher(
+    key="",
+    topic="cms.bluesky.reduced.documents",
+    bootstrap_servers=",".join(kafka_config["bootstrap_servers"]),
+    producer_config=kafka_config["runengine_producer_config"],
+)
 
 
 from SciAnalysis import tools
@@ -205,7 +217,8 @@ def publish_reduced_documents(reduced, metadata, reduced_publisher):
 
 def output_reduced_document(name, doc):
     cms_sandbox_tiled_client.v1.insert(name, doc)
-
+    reduced_producer(name, doc)
+    
 
 @task
 def analysis(ref):
