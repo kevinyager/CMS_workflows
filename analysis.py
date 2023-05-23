@@ -225,12 +225,17 @@ def analysis(ref):
     logger = get_run_logger()
     run = tiled_client_raw[ref]
     full_uid = run.start["uid"]
-    # print(f"{full_uid = }")
     # logger.info(f"{full_uid = }")
-    if run.start.get("md").get("PTA"):
-
+    if not run.start.get("md"):
+        logger.info(f"Not running analysis on {full_uid}")
+        logger.info("No md in start doc")
+        return
+    elif not run.start.get("md").get("PTA"):
+        logger.info(f"Not running analysis on {full_uid}")
+        logger.info("Missing the 'PTA' key in the start doc md")
+        return
+    else:
         SciAnalysis_PATH='/nsls2/data/cms/legacy/xf11bm/software/SciAnalysis/'
-        # SciAnalysis_PATH in sys.path or sys.path.append(SciAnalysis_PATH)
 
         # # Experimental parameters
         # ########################################
@@ -317,10 +322,6 @@ def analysis(ref):
         logger.info(f"publishing run {full_uid}")
         publish_reduced_documents(reduced, metadata, output_reduced_document)
         logger.info("Done")
-
-    else:
-        logger.info(f"Not running analysis on {full_uid}")
-        return
 
 
 @flow
