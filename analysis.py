@@ -6,6 +6,9 @@ import sys
 import time as ttime
 import uuid
 
+from bluesky_kafka import Publisher, RemoteDispatcher
+import nslsii.kafka_utils
+
 import numpy as np
 from prefect import flow, get_run_logger, task
 from tiled.client import from_profile
@@ -19,6 +22,15 @@ tiled_client = from_profile("nsls2", username=None)["cms"]
 tiled_client_raw = tiled_client["raw"]
 # tiled_client_processed = tiled_client["sandbox"]
 cms_sandbox_tiled_client = tiled_client["bluesky_sandbox"]
+
+
+kafka_config = nslsii.kafka_utils._read_bluesky_kafka_config_file(config_file_path="/etc/bluesky/kafka.yml")
+reduced_producer = Publisher(
+    key="",
+    topic="cms.bluesky.reduced.documents",
+    bootstrap_servers=",".join(kafka_config["bootstrap_servers"]),
+    producer_config=kafka_config["runengine_producer_config"],
+)
 
 
 from SciAnalysis import tools
@@ -205,108 +217,113 @@ def publish_reduced_documents(reduced, metadata, reduced_publisher):
 
 def output_reduced_document(name, doc):
     cms_sandbox_tiled_client.v1.insert(name, doc)
+    reduced_producer(name, doc)
 
 
 @task
 def analysis(ref):
     logger = get_run_logger()
-    SciAnalysis_PATH='/nsls2/data/cms/legacy/xf11bm/software/SciAnalysis/'
-    # SciAnalysis_PATH in sys.path or sys.path.append(SciAnalysis_PATH)
-
-    # # Experimental parameters
-    # ########################################
-    # TODO: can these be pulled from the bluesky start doc?
-    calibration = Calibration(wavelength_A=0.9184)  # 13.5 keV; calibration wavelength_A
-    calibration.set_image_size(1475, height=1679)  # Pilatus2M
-    calibration.set_pixel_size(pixel_size_um=172.0)
-    # calibration.set_beam_position(754, 1075)
-    calibration.set_beam_position(757.0, 1679-600)
-
-    calibration.set_distance(5.83)  # 5m
-
-    # ************
-    # TODO: what should all these paths be?
-    #     - are they the same between experiments?
-    #     - can I pull any of this from the bluesky start doc
-    mask_dir = SciAnalysis_PATH + '/SciAnalysis/XSAnalysis/masks/'
-    mask = Mask(mask_dir+'Dectris/Pilatus2M_gaps-mask.png')
-    # /nsls2/data/cms/legacy/xf11bm/data/2023_1/KYager/code_test/saxs/analysis/mask.png
-    # TODO: Try to pull this from bluesky start doc
-    # experiment_alias_directory in start doc
-    analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/PTA/saxs/analysis/"
-    # mask.load(analysis_dir + '/mask.png')
-    mask.load(analysis_dir + 'Pilatus2M_current-mask.png')
-
-    # Analysis to perform
-    ########################################
-    # source_dir = f'{analysis_dir}/raw/'
-    output_dir = analysis_dir
-    # output_dir = "/nsls2/data/dssi/scratch/prefect-outputs/cms/"
-
-
-    load_args = {'calibration': calibration,
-                'mask': mask,
-                # 'background': source_dir+'empty*saxs.tiff',
-                # 'transmission_int': f'{analysis_dir}/data/Transmission_output.csv', # Can also specify an float value.
-                }
-    run_args = {'verbosity': 3,
-                # 'save_results': ['xml', 'plots', 'txt', 'hdf5'],
-                }
-
-    process = Protocols.ProcessorXS(load_args=load_args, run_args=run_args)
-    # TODO: below doesn't work and will not work. Prefect-worker1 can't
-    #       access the cms databroker directly
-    # process.connect_databroker('cms') # Access databroker metadata
-
-    patterns = [
-                ['theta', '.+_th(\d+\.\d+)_.+'] ,
-                ['x_position', '.+_x(-?\d+\.\d+)_.+'] ,
-                ['y_position', '.+_yy(-?\d+\.\d+)_.+'] ,
-                #['anneal_time', '.+_anneal(\d+)_.+'] ,
-                #['cost', '.+_Cost(\d+\.\d+)_.+'] ,
-                ['annealing_temperature', '.+_T(\d+\.\d\d\d)C_.+'] ,
-                #['annealing_time', '.+_(\d+\.\d)s_T.+'] ,
-                #['annealing_temperature', '.+_localT(\d+\.\d)_.+'] ,
-                #['annealing_time', '.+_clock(\d+\.\d\d)_.+'] ,
-                #['o_position', '.+_opos(\d+\.\d+)_.+'] ,
-                #['l_position', '.+_lpos(\d+\.\d+)_.+'] ,
-                ['exposure_time', '.+_(\d+\.\d+)s_\d+_saxs.+'] ,
-                ['sequence_ID', '.+_(\d+).+'] ,
-                ]
-
-    protocols = [
-        #Protocols.HDF5(save_results=['hdf5'])
-        #Protocols.calibration_check(show=False, AgBH=True, q0=0.010, num_rings=4, ztrim=[0.05, 0.05], ) ,
-        #Protocols.circular_average(ylog=True, plot_range=[0, 0.12, None, None], label_filename=True) ,
-        #Protocols.thumbnails(crop=None, resize=1.0, blur=None, cmap=cmap_vge, ztrim=[0.01, 0.001]) ,
-
-        #Protocols.circular_average_q2I_fit(show=False, q0=0.0140, qn_power=2.5, sigma=0.0008, plot_range=[0, 0.06, 0, None], fit_range=[0.008, 0.022]) ,
-        # Protocols.circular_average_q2I_fit(qn_power=3.5, trim_range=[0.005, 0.03], fit_range=[0.007, 0.019], q0=0.0120, sigma=0.0008) ,
-        #Protocols.circular_average_q2I_fit(qn_power=3.0, trim_range=[0.005, 0.035], fit_range=[0.008, 0.03], q0=0.0180, sigma=0.001) ,
-
-        Protocols.linecut_qr_fit(show_region=False, show=False, qz=0.027, dq=0.008, fit_range=[0.008, 0.026], plot_range=[0, 0.05, 0, None]) ,
-        Protocols.linecut_qz_fit(qr=0.0185, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.036, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
-
-        #Protocols.databroker_extract(constraints={'measure_type':'measure'}, timestamp=True, sectino='start'),
-        # Protocols.metadata_extract(patterns=patterns) ,
-        ]
-
-        # End SciAnalysis setup
-        ########################################
-
     run = tiled_client_raw[ref]
     full_uid = run.start["uid"]
-    # print(f"{full_uid = }")
     # logger.info(f"{full_uid = }")
-    logger.info(f"reducing run {full_uid}")
-    reduced, metadata = reduce_run(run, process, protocols, output_dir)
-    # print(f"{reduced = }")
-    # logger.info(f"{reduced = }")
-    # print(f"{metadata = }")
-    # logger.info(f"{metadata = }")
-    logger.info(f"publishing run {full_uid}")
-    publish_reduced_documents(reduced, metadata, output_reduced_document)
-    logger.info("Done")
+    # FIXME: PTA could be in start doc or in md dict in start doc
+    if not run.start.get("PTA") and not (run.start.get("md") and run.start.get("md").get("PTA")):
+        logger.info(f"Not running analysis on {full_uid}")
+        return
+    else:
+        logger.info(f"Running analysis on {full_uid}")
+
+        SciAnalysis_PATH='/nsls2/data/cms/legacy/xf11bm/software/SciAnalysis/'
+
+        # # Experimental parameters
+        # ########################################
+        # TODO: can these be pulled from the bluesky start doc?
+        calibration = Calibration(wavelength_A=0.9184)  # 13.5 keV; calibration wavelength_A
+        calibration.set_image_size(1475, height=1679)  # Pilatus2M
+        calibration.set_pixel_size(pixel_size_um=172.0)
+        # calibration.set_beam_position(754, 1075)
+        calibration.set_beam_position(757.0, 1679-600)
+
+        calibration.set_distance(5.83)  # 5m
+
+        # ************
+        # TODO: what should all these paths be?
+        #     - are they the same between experiments?
+        #     - can I pull any of this from the bluesky start doc
+        mask_dir = SciAnalysis_PATH + '/SciAnalysis/XSAnalysis/masks/'
+        mask = Mask(mask_dir+'Dectris/Pilatus2M_gaps-mask.png')
+        # /nsls2/data/cms/legacy/xf11bm/data/2023_1/KYager/code_test/saxs/analysis/mask.png
+        # TODO: Try to pull this from bluesky start doc
+        # experiment_alias_directory in start doc
+        analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/PTA/saxs/analysis/"
+        # mask.load(analysis_dir + '/mask.png')
+        mask.load(analysis_dir + 'Pilatus2M_current-mask.png')
+
+        # Analysis to perform
+        ########################################
+        # source_dir = f'{analysis_dir}/raw/'
+        output_dir = analysis_dir
+        # output_dir = "/nsls2/data/dssi/scratch/prefect-outputs/cms/"
+
+
+        load_args = {'calibration': calibration,
+                    'mask': mask,
+                    # 'background': source_dir+'empty*saxs.tiff',
+                    # 'transmission_int': f'{analysis_dir}/data/Transmission_output.csv', # Can also specify an float value.
+                    }
+        run_args = {'verbosity': 3,
+                    # 'save_results': ['xml', 'plots', 'txt', 'hdf5'],
+                    }
+
+        process = Protocols.ProcessorXS(load_args=load_args, run_args=run_args)
+        # TODO: below doesn't work and will not work. Prefect-worker1 can't
+        #       access the cms databroker directly
+        # process.connect_databroker('cms') # Access databroker metadata
+
+        patterns = [
+                    ['theta', '.+_th(\d+\.\d+)_.+'] ,
+                    ['x_position', '.+_x(-?\d+\.\d+)_.+'] ,
+                    ['y_position', '.+_yy(-?\d+\.\d+)_.+'] ,
+                    #['anneal_time', '.+_anneal(\d+)_.+'] ,
+                    #['cost', '.+_Cost(\d+\.\d+)_.+'] ,
+                    ['annealing_temperature', '.+_T(\d+\.\d\d\d)C_.+'] ,
+                    #['annealing_time', '.+_(\d+\.\d)s_T.+'] ,
+                    #['annealing_temperature', '.+_localT(\d+\.\d)_.+'] ,
+                    #['annealing_time', '.+_clock(\d+\.\d\d)_.+'] ,
+                    #['o_position', '.+_opos(\d+\.\d+)_.+'] ,
+                    #['l_position', '.+_lpos(\d+\.\d+)_.+'] ,
+                    ['exposure_time', '.+_(\d+\.\d+)s_\d+_saxs.+'] ,
+                    ['sequence_ID', '.+_(\d+).+'] ,
+                    ]
+
+        protocols = [
+            #Protocols.HDF5(save_results=['hdf5'])
+            #Protocols.calibration_check(show=False, AgBH=True, q0=0.010, num_rings=4, ztrim=[0.05, 0.05], ) ,
+            #Protocols.circular_average(ylog=True, plot_range=[0, 0.12, None, None], label_filename=True) ,
+            #Protocols.thumbnails(crop=None, resize=1.0, blur=None, cmap=cmap_vge, ztrim=[0.01, 0.001]) ,
+
+            #Protocols.circular_average_q2I_fit(show=False, q0=0.0140, qn_power=2.5, sigma=0.0008, plot_range=[0, 0.06, 0, None], fit_range=[0.008, 0.022]) ,
+            # Protocols.circular_average_q2I_fit(qn_power=3.5, trim_range=[0.005, 0.03], fit_range=[0.007, 0.019], q0=0.0120, sigma=0.0008) ,
+            #Protocols.circular_average_q2I_fit(qn_power=3.0, trim_range=[0.005, 0.035], fit_range=[0.008, 0.03], q0=0.0180, sigma=0.001) ,
+
+            # Protocols.linecut_qr_fit(show_region=False, show=False, qz=0.027, dq=0.008, fit_range=[0.008, 0.026], plot_range=[0, 0.05, 0, None]) ,
+            # Protocols.linecut_qz_fit(qr=0.0185, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.036, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
+
+            Protocols.linecut_qr_fit(show_region=False, show=False, qz=0.032, dq=0.008, fit_range=[0.008, 0.026], plot_range=[0, 0.05, 0, None]) ,
+            Protocols.linecut_qz_fit(name='linecut_qz_fit_p', qr=0.0195, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.02, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
+            Protocols.linecut_qz_fit(name='linecut_qz_fit_bs', qr=0.0057, dq=0.0025, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.038, 0.058], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
+
+            #Protocols.databroker_extract(constraints={'measure_type':'measure'}, timestamp=True, sectino='start'),
+            # Protocols.metadata_extract(patterns=patterns) ,
+            ]
+
+            # End SciAnalysis setup
+            ########################################
+        logger.info(f"reducing run {full_uid}")
+        reduced, metadata = reduce_run(run, process, protocols, output_dir)
+        logger.info(f"publishing run {full_uid}")
+        publish_reduced_documents(reduced, metadata, output_reduced_document)
+        logger.info("Done")
 
 
 @flow
