@@ -310,8 +310,8 @@ def analysis(ref):
             # Protocols.linecut_qz_fit(qr=0.0185, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.036, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
 
             Protocols.linecut_qr_fit(show_region=False, show=False, qz=0.032, dq=0.008, fit_range=[0.008, 0.026], plot_range=[0, 0.05, 0, None]) ,
-            Protocols.linecut_qz_fit(name='linecut_qz_fit_p', qr=0.0195, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.02, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
-            Protocols.linecut_qz_fit(name='linecut_qz_fit_bs', qr=0.0057, dq=0.0025, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.038, 0.058], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
+            # Protocols.linecut_qz_fit(name='linecut_qz_fit_p', qr=0.0195, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.02, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
+            # Protocols.linecut_qz_fit(name='linecut_qz_fit_bs', qr=0.0057, dq=0.0025, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.038, 0.058], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
 
             #Protocols.databroker_extract(constraints={'measure_type':'measure'}, timestamp=True, sectino='start'),
             # Protocols.metadata_extract(patterns=patterns) ,
