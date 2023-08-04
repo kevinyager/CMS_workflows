@@ -317,6 +317,7 @@ def analysis(ref):
                     ]
 
         # TOCHANGE
+        q_Al3Sc, dq_Al3Sc = 2.64, 0.05
         protocols = [
             #Protocols.HDF5(save_results=['hdf5'])
             #Protocols.calibration_check(show=False, AgBH=True, q0=0.010, num_rings=4, ztrim=[0.05, 0.05], ) ,
@@ -337,7 +338,7 @@ def analysis(ref):
             #Protocols.databroker_extract(constraints={'measure_type':'measure'}, timestamp=True, sectino='start'),
             # Protocols.metadata_extract(patterns=patterns) ,
 
-            Protocols.circular_average_q2I_fit(name='circular_average_q2I_fit_Z', ylog=False, qn_power=1.0, plot_range=[1.0, 3.0, 0, None], fit_range=[2.10,2.8], dezing=True) ,
+            Protocols.circular_average_q2I_fit(name='circular_average_q2I_fit_AE_Al3Sc', ylog=False, qn_power=1.0, plot_range=[1.0, 3.0, 0, None], fit_range=[q_Al3Sc-dq_Al3Sc, q_Al3Sc+dq_Al3Sc], dezing=True) ,
 
             ]
 
