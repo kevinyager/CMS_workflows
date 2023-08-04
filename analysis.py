@@ -43,6 +43,8 @@ from SciAnalysis.Result import *
 # output_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/PTA/saxs/analysis/"
 
 
+# Search for "TOCHANGE" below for where experiment-specific changes must be made
+
 # Helpers
 ########################################
 from collections.abc import MutableMapping
@@ -81,6 +83,8 @@ def reduce_run(bluesky_run, process, protocols, output_dir):
     reduced = {}
     reduced["next big thing"] = "avocado toast"
 
+
+    ########################################
     # SciAnalysis code goes here
     ########################################
     verbosity = 3
@@ -90,7 +94,7 @@ def reduce_run(bluesky_run, process, protocols, output_dir):
     # Determine filename
     dir = bluesky_run.metadata['start']['experiment_alias_directory']
     filename = bluesky_run.metadata['start']['filename']
-    infile = '{}saxs/raw/{}_saxs.tiff'.format(dir, filename)
+    infile = '{}maxs/raw/{}_maxs.tiff'.format(dir, filename) # TOCHANGE
 
     if verbosity>=3:
         print(f"Running SciAnalysis on: {infile}")
@@ -128,6 +132,7 @@ def reduce_run(bluesky_run, process, protocols, output_dir):
     # reduced['variance'] = variance*n
     # reduced['analyzed'] = True
 
+    ########################################
     # End of SciAnalysis specific code
     ########################################
 
@@ -233,7 +238,16 @@ def analysis(ref):
     else:
         logger.info(f"Running analysis on {full_uid}")
 
+
+
+        ########################################
+        # SciAnalsyis setup
+        ########################################
+
+
         SciAnalysis_PATH='/nsls2/data/cms/legacy/xf11bm/software/SciAnalysis/'
+
+        # TOCHANGE
 
         # # Experimental parameters
         # ########################################
@@ -260,7 +274,7 @@ def analysis(ref):
         # TODO: Try to pull this from bluesky start doc
         # experiment_alias_directory in start doc
         #analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/PTA/saxs/analysis/"
-        analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/KChen-Wiegart2/maxs/analysis/"
+        analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/KChen-Wiegart2/maxs/analysis/" # TOCHANGE
 
         mask.load(analysis_dir + 'mask.png')
         #mask.load(analysis_dir + 'Pilatus2M_current-mask.png')
@@ -302,7 +316,7 @@ def analysis(ref):
                     ['sequence_ID', '.+_(\d+).+'] ,
                     ]
 
-        # 2023-05-24L KY making change to code, as a test
+        # TOCHANGE
         protocols = [
             #Protocols.HDF5(save_results=['hdf5'])
             #Protocols.calibration_check(show=False, AgBH=True, q0=0.010, num_rings=4, ztrim=[0.05, 0.05], ) ,
@@ -327,8 +341,13 @@ def analysis(ref):
 
             ]
 
-            # End SciAnalysis setup
-            ########################################
+
+        ########################################
+        # End SciAnalysis setup
+        ########################################
+
+
+
 
         logger.info(f"reducing run {full_uid}")
         reduced, metadata = reduce_run(run, process, protocols, output_dir)
