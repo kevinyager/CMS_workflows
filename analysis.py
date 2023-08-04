@@ -239,25 +239,31 @@ def analysis(ref):
         # ########################################
         # TODO: can these be pulled from the bluesky start doc?
         calibration = Calibration(wavelength_A=0.9184)  # 13.5 keV; calibration wavelength_A
-        calibration.set_image_size(1475, height=1679)  # Pilatus2M
+        calibration.set_image_size(981, height=1043) # Pilatus800k
         calibration.set_pixel_size(pixel_size_um=172.0)
-        # calibration.set_beam_position(754, 1075)
-        calibration.set_beam_position(757.0, 1679-600)
 
-        calibration.set_distance(5.83)  # 5m
+        #calibration.set_beam_position(797, 594.5) # OpenWAXS ~240mm from sample in PTA setup # GIMP (796, 594)
+        xshift = -20/0.172
+        yshift = 40/0.172
+        calibration.set_beam_position(797+xshift, 594.5+yshift) # OpenWAXS ~240mm from sample in PTA setup
+        calibration.set_distance(0.255)
 
         # ************
         # TODO: what should all these paths be?
         #     - are they the same between experiments?
         #     - can I pull any of this from the bluesky start doc
         mask_dir = SciAnalysis_PATH + '/SciAnalysis/XSAnalysis/masks/'
-        mask = Mask(mask_dir+'Dectris/Pilatus2M_gaps-mask.png')
+        #mask = Mask(mask_dir+'Dectris/Pilatus2M_gaps-mask.png')
+        mask = Mask(mask_dir+'Dectris/Pilatus800k2_gaps-mask.png')
+
         # /nsls2/data/cms/legacy/xf11bm/data/2023_1/KYager/code_test/saxs/analysis/mask.png
         # TODO: Try to pull this from bluesky start doc
         # experiment_alias_directory in start doc
-        analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/PTA/saxs/analysis/"
-        # mask.load(analysis_dir + '/mask.png')
-        mask.load(analysis_dir + 'Pilatus2M_current-mask.png')
+        #analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/PTA/saxs/analysis/"
+        analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/KChen-Wiegart2/maxs/analysis/"
+
+        mask.load(analysis_dir + 'mask.png')
+        #mask.load(analysis_dir + 'Pilatus2M_current-mask.png')
 
         # Analysis to perform
         ########################################
@@ -310,16 +316,20 @@ def analysis(ref):
             # Protocols.linecut_qr_fit(show_region=False, show=False, qz=0.027, dq=0.008, fit_range=[0.008, 0.026], plot_range=[0, 0.05, 0, None]) ,
             # Protocols.linecut_qz_fit(qr=0.0185, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.036, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
 
-            Protocols.linecut_qr_fit(show_region=False, show=False, qz=0.032, dq=0.008, fit_range=[0.008, 0.026], plot_range=[0, 0.05, 0, None]) ,
+            #Protocols.linecut_qr_fit(show_region=False, show=False, qz=0.032, dq=0.008, fit_range=[0.008, 0.026], plot_range=[0, 0.05, 0, None]) ,
             # Protocols.linecut_qz_fit(name='linecut_qz_fit_p', qr=0.0195, dq=0.004, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.02, 0.055], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
             # Protocols.linecut_qz_fit(name='linecut_qz_fit_bs', qr=0.0057, dq=0.0025, show_region=False, label_filename=True, trim_range=[0, 0.06], fit_range=[0.038, 0.058], plot_range=[0, 0.06, 0, None], q0=0.043, sigma=0.0022, critical_angle_substrate=0.132, critical_angle_film=0.094, ),
 
             #Protocols.databroker_extract(constraints={'measure_type':'measure'}, timestamp=True, sectino='start'),
             # Protocols.metadata_extract(patterns=patterns) ,
+
+            Protocols.circular_average_q2I_fit(name='circular_average_q2I_fit_Z', ylog=False, qn_power=1.0, plot_range=[1.0, 3.0, 0, None], fit_range=[2.10,2.8], dezing=True) ,
+
             ]
 
             # End SciAnalysis setup
             ########################################
+
         logger.info(f"reducing run {full_uid}")
         reduced, metadata = reduce_run(run, process, protocols, output_dir)
         logger.info(f"publishing run {full_uid}")
