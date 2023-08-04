@@ -94,7 +94,7 @@ def reduce_run(bluesky_run, process, protocols, output_dir):
     # Determine filename
     dir = bluesky_run.metadata['start']['experiment_alias_directory']
     filename = bluesky_run.metadata['start']['filename']
-    infile = '{}maxs/raw/{}_maxs.tiff'.format(dir, filename) # TOCHANGE
+    infile = '{}/maxs/raw/{}_maxs.tiff'.format(dir, filename) # TOCHANGE
 
     if verbosity>=3:
         print(f"Running SciAnalysis on: {infile}")
