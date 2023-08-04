@@ -17,4 +17,4 @@ def end_of_run_workflow(stop_doc):
     general_data_validation(beamline_acronym="cms", uid=uid)
 
     # Comment out the next line if you want to disable (avoid creating workflows):
-    analysis_flow(raw_ref=uid)
+    #analysis_flow(raw_ref=uid)
