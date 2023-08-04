@@ -274,7 +274,7 @@ def analysis(ref):
         # TODO: Try to pull this from bluesky start doc
         # experiment_alias_directory in start doc
         #analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/PTA/saxs/analysis/"
-        analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/KChen-Wiegart2/maxs/analysisAE/" # TOCHANGE
+        analysis_dir = "/nsls2/data/cms/legacy/xf11bm/data/2023_2/KChen-Wiegart2/maxs/analysis/" # TOCHANGE
 
         mask.load(analysis_dir + 'mask.png')
         #mask.load(analysis_dir + 'Pilatus2M_current-mask.png')
