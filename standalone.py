@@ -1,5 +1,7 @@
 import functools
+import argparse
 import datetime
+from pprint import pformat
 
 # import glob
 import pprint
@@ -387,10 +389,10 @@ def get_arg_parser():
 
 def message_to_reduction():
     args = get_arg_parser().parse_args()
-
+    print(kafka_config)
     config = {
         **{
-            k: kafka_config[k]
+            k: kafka_config['runengine_producer_config'][k]
             for k in (
                 "security.protocol",
                 "sasl.mechanisms",
@@ -403,7 +405,7 @@ def message_to_reduction():
     }
     document_to_analysis_dispatcher = RemoteDispatcher(
         topics=[f"{args.endstation}.bluesky.runengine.documents"],
-        bootstrap_servers=kafka_config["bootstrap_servers"],
+        bootstrap_servers=','.join(kafka_config["bootstrap_servers"]),
         group_id=f"{args.endstation}-analysis-1",
         consumer_config=config,
     )
@@ -411,6 +413,7 @@ def message_to_reduction():
     def consumer_factory(start_doc_name, start_doc):
         print(f"start uid: {start_doc['uid']}")
 
+        
         def run_flow_on_stop_document(doc_name, doc):
             if doc_name == "stop":
                 print(f"stop document:\n{pformat(doc)}")
@@ -419,7 +422,12 @@ def message_to_reduction():
                 print(doc_name)
                 pass
 
-        return [run_flow_on_stop_document], []
+        if start_doc.get('PTA', None) is None:
+            print('not my problem')
+            return [],  []
+        else:
+            print('my problem')
+            return [run_flow_on_stop_document], []
 
     workflow_router = RunRouter(factories=[consumer_factory])
 
@@ -431,5 +439,5 @@ def message_to_reduction():
     print("all done")
 
 
-def __main__():
+if __name__ == '__main__':
     message_to_reduction()
