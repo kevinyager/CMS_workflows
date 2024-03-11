@@ -7,6 +7,8 @@ import sys
 import time as ttime
 import uuid
 
+from event_model import RunRouter
+
 from bluesky_kafka import Publisher, RemoteDispatcher
 import nslsii.kafka_utils
 
@@ -402,7 +404,7 @@ def message_to_reduction():
     }
     document_to_analysis_dispatcher = RemoteDispatcher(
         topics=[f"{args.endstation}.bluesky.runengine.documents"],
-        bootstrap_servers=bootstrap_servers,
+        bootstrap_servers=kafka_config["bootstrap_servers"],
         group_id=f"{args.endstation}-analysis-1",
         consumer_config=config,
     )
@@ -424,10 +426,10 @@ def message_to_reduction():
 
     workflow_router = RunRouter(factories=[consumer_factory])
 
-    document_to_workflow_dispatcher.subscribe(workflow_router)
+    document_to_analysis_dispatcher.subscribe(workflow_router)
 
     print("start the dispatcher")
-    document_to_workflow_dispatcher.start()
+    document_to_analysis_dispatcher.start()
 
     print("all done")
 
