@@ -430,3 +430,7 @@ def message_to_reduction():
     document_to_workflow_dispatcher.start()
 
     print("all done")
+
+
+def __main__():
+    message_to_reduction()
