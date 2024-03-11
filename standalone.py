@@ -379,7 +379,6 @@ def get_arg_parser():
         description="Run a Prefect 2 workflow in response to a Kafka message."
     )
     arg_parser.add_argument("endstation")
-    arg_parser.add_argument("deployment_name")
     arg_parser.add_argument(
         "--kafka-config-file", required=False, default="/etc/bluesky/kafka.yml"
     )
@@ -414,9 +413,7 @@ def message_to_reduction():
 
         def run_flow_on_stop_document(doc_name, doc):
             if doc_name == "stop":
-                # kick off a Prefect 2 deployment
                 print(f"stop document:\n{pformat(doc)}")
-                print(f"run deployment {args.deployment_name}")
                 analysis(start_doc["uid"])
             else:
                 print(doc_name)
