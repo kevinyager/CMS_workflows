@@ -238,7 +238,7 @@ def output_reduced_document(name, doc):
     reduced_producer(name, doc)
 
 
-@functools.lrucache
+@functools.lru_cache
 def setup_scianalysis():
 
     SciAnalysis_PATH = "/nsls2/data/cms/legacy/xf11bm/software/SciAnalysis/"
